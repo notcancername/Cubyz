@@ -1159,6 +1159,12 @@ pub const Protocols = struct {
 					std.log.err("Received too long chat message with {}/{} characters.", .{main.graphics.TextBuffer.Parser.countVisibleCharacters(msg), msg.len});
 					return error.Invalid;
 				}
+
+				if (!user.isLoggedIn.load(.monotonic) and !std.mem.startsWith(u8, msg, "/login ")) {
+					std.log.warn("User \"{f}\" tried to send a chat message, but was not logged in.", .{std.ascii.hexEscape(user.name, .upper)});
+					return;
+				}
+
 				main.server.messageFrom(msg, user);
 			} else {
 				main.gui.windowlist.chat.addMessage(msg);
@@ -1251,6 +1257,11 @@ pub const Protocols = struct {
 		pub const asynchronous = false;
 		fn receive(conn: *Connection, reader: *utils.BinaryReader) !void {
 			if(conn.user) |user| {
+				if(!user.isLoggedIn.load(.monotonic)) {
+					std.log.warn("User \"{f}\" tried to interact, but was not logged in.", .{std.ascii.hexEscape(user.name, .upper)});
+					sendFailure(conn);
+					return;
+				}
 				if(reader.remaining[0] == 0xff) return error.InvalidPacket;
 				items.Inventory.Sync.ServerSide.receiveCommand(user, reader) catch |err| {
 					if(err != error.InventoryNotFound) return err;

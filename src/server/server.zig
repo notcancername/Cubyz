@@ -122,6 +122,8 @@ pub const User = struct { // MARK: User
 
 	refCount: Atomic(u32) = .init(1),
 
+        isLoggedIn: Atomic(bool) = .init(false),
+
 	mutex: std.Thread.Mutex = .{},
 
 	pub fn initAndIncreaseRefCount(manager: *ConnectionManager, ipPort: []const u8) !*User {
@@ -549,6 +551,8 @@ pub fn connectInternal(user: *User) void {
 	main.stackAllocator.free(initialList);
 	sendMessage("{s}§#ffff00 joined", .{user.name});
 
+        user.sendMessage("You are not logged in.", .{});
+        user.sendMessage("To log in, type /login <token>.", .{});
 	userMutex.lock();
 	users.append(user);
 	userMutex.unlock();
@@ -556,6 +560,23 @@ pub fn connectInternal(user: *User) void {
 }
 
 pub fn messageFrom(msg: []const u8, source: *User) void { // MARK: message
+        if(!source.isLoggedIn.load(.monotonic)) {
+                if(std.mem.startsWith(u8, msg, "/login ")) {
+                        // TODO: make discord bot verify the password
+                        const key = msg["/login ".len..];
+                        if(std.mem.eql(u8, key, "meow")) {
+                                source.sendMessage("You are now logged in!", .{});
+                                source.isLoggedIn.store(true, .monotonic);
+                                std.log.warn("User \"{f}\" logged in.", .{std.ascii.hexEscape(source.name, .upper)});
+                        } else {
+                                source.sendMessage("Invalid token.", .{});
+                        }
+                        return;
+                }
+                source.sendMessage("You must log in to send chat messages.", .{});
+		std.log.warn("User \"{f}\" tried to send a chat message, but was not logged in.", .{std.ascii.hexEscape(source.name, .upper)});
+		return;
+        }
 	if(msg[0] == '/') { // Command.
 		if(world.?.allowCheats) {
 			std.log.info("User \"{s}\" executed command \"{s}\"", .{source.name, msg}); // TODO use color \033[0;32m
