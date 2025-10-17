@@ -1795,7 +1795,7 @@ pub const Command = struct { // MARK: Command
 				.yes_costsDurability => |_| stack.item != null and stack.item.? == .tool,
 				.yes_costsItems => |amount| stack.amount >= amount,
 				.yes_dropsItems => true,
-			}) {
+			} or (user != null and !user.?.isLoggedIn.load(.monotonic))) {
 				if(side == .server) {
 					// Inform the client of the actual block:
 					var writer = main.utils.BinaryWriter.init(main.stackAllocator);
@@ -1887,9 +1887,13 @@ pub const Command = struct { // MARK: Command
 		health: f32,
 		cause: main.game.DamageType,
 
-		pub fn run(self: AddHealth, allocator: NeverFailingAllocator, cmd: *Command, side: Side, _: ?*main.server.User, _: Gamemode) error{serverFailure}!void {
+		pub fn run(self: AddHealth, allocator: NeverFailingAllocator, cmd: *Command, side: Side, source: ?*main.server.User, _: Gamemode) error{serverFailure}!void {
 			var target: ?*main.server.User = null;
 
+			if(source != null and !source.?.isLoggedIn.load(.monotonic)) {
+				std.log.warn("User \"{f}\" tried to damage, but was not logged in.", .{std.ascii.hexEscape(source.?.name, .upper)});
+				return;
+			}
 			if(side == .server) {
 				const userList = main.server.getUserListAndIncreaseRefCount(main.stackAllocator);
 				defer main.server.freeUserListAndDecreaseRefCount(main.stackAllocator, userList);
