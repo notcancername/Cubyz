@@ -3,6 +3,7 @@ const std = @import("std");
 pub const gui = @import("gui/gui.zig");
 pub const server = @import("server/server.zig");
 
+pub const auth = @import("server/auth.zig");
 pub const audio = @import("audio.zig");
 pub const assets = @import("assets.zig");
 pub const block_entity = @import("block_entity.zig");
@@ -636,6 +637,9 @@ pub fn main() void { // MARK: main()
 
 	items.globalInit();
 	defer items.deinit();
+
+	auth.globalInit() catch std.log.err("failed to initialize auth", .{});
+	defer auth.globalDeinit();
 
 	itemdrop.ItemDropRenderer.init();
 	defer itemdrop.ItemDropRenderer.deinit();

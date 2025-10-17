@@ -2,6 +2,7 @@ const std = @import("std");
 const Atomic = std.atomic.Value;
 
 const main = @import("main");
+const auth = main.auth;
 const chunk = main.chunk;
 const network = main.network;
 const Connection = network.Connection;
@@ -552,7 +553,7 @@ pub fn connectInternal(user: *User) void {
 	sendMessage("{s}§#ffff00 joined", .{user.name});
 
         user.sendMessage("You are not logged in.", .{});
-        user.sendMessage("To log in, type /login <token>.", .{});
+        user.sendMessage("To log in, type /login <password>.", .{});
 	userMutex.lock();
 	users.append(user);
 	userMutex.unlock();
@@ -562,14 +563,22 @@ pub fn connectInternal(user: *User) void {
 pub fn messageFrom(msg: []const u8, source: *User) void { // MARK: message
         if(!source.isLoggedIn.load(.monotonic)) {
                 if(std.mem.startsWith(u8, msg, "/login ")) {
-                        // TODO: make discord bot verify the password
-                        const key = msg["/login ".len..];
-                        if(std.mem.eql(u8, key, "meow")) {
+                        const password = msg["/login ".len..];
+                        if(auth.verify(source.name, password)) {
                                 source.sendMessage("You are now logged in!", .{});
                                 source.isLoggedIn.store(true, .monotonic);
-                                std.log.warn("User \"{f}\" logged in.", .{std.ascii.hexEscape(source.name, .upper)});
-                        } else {
-                                source.sendMessage("Invalid token.", .{});
+                                std.log.info("User \"{f}\" logged in.", .{std.ascii.hexEscape(source.name, .upper)});
+                                return;
+                        } else |err| switch(err) {
+                                error.Unregistered => source.sendMessage("Please join the Discord server to register an account.", .{}),
+                                error.IncorrectPassword => {
+                                        std.log.warn("User \"{f}\" tried to login using an incorrect password.", .{std.ascii.hexEscape(source.name, .upper)}); // TODO: display IP.
+                                        source.sendMessage("Invalid password.", .{});
+                                },
+                                else => {
+                                        std.log.err("Login failed: {}, {?f}", .{err, @errorReturnTrace()});
+                                        source.sendMessage("Login failed, please contact an administrator.", .{});
+                                },
                         }
                         return;
                 }

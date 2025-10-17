@@ -1257,11 +1257,6 @@ pub const Protocols = struct {
 		pub const asynchronous = false;
 		fn receive(conn: *Connection, reader: *utils.BinaryReader) !void {
 			if(conn.user) |user| {
-				if(!user.isLoggedIn.load(.monotonic)) {
-					std.log.warn("User \"{f}\" tried to interact, but was not logged in.", .{std.ascii.hexEscape(user.name, .upper)});
-					sendFailure(conn);
-					return;
-				}
 				if(reader.remaining[0] == 0xff) return error.InvalidPacket;
 				items.Inventory.Sync.ServerSide.receiveCommand(user, reader) catch |err| {
 					if(err != error.InventoryNotFound) return err;
