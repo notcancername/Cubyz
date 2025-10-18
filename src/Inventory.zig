@@ -955,7 +955,7 @@ pub const Command = struct { // MARK: Command
 		}
 		std.debug.assert(inv.ref().item == null or std.meta.eql(inv.ref().item.?, item.?));
 		inv.ref().item = item.?;
-		std.debug.print("executeAddOperation {d}+{d}\n", .{inv.ref().amount, amount});
+		std.log.debug("executeAddOperation {d}+{d}\n", .{inv.ref().amount, amount});
 		inv.ref().amount += amount;
 		std.debug.assert(inv.ref().amount <= item.?.stackSize());
 	}
@@ -968,7 +968,7 @@ pub const Command = struct { // MARK: Command
 				.amount = amount,
 			}});
 		}
-		std.debug.print("executeRemoveOperation {d}+{d}\n", .{inv.ref().amount, amount});
+		std.log.debug("executeRemoveOperation {d}+{d}\n", .{inv.ref().amount, amount});
 		inv.ref().amount -= amount;
 		if(inv.ref().amount == 0) {
 			inv.ref().item = null;
@@ -992,7 +992,7 @@ pub const Command = struct { // MARK: Command
 
 	fn executeBaseOperation(self: *Command, allocator: NeverFailingAllocator, _op: BaseOperation, side: Side) void { // MARK: executeBaseOperation()
 		var op = _op;
-		std.debug.print("executeBaseOperation {s}\n", .{@tagName(op)});
+		std.log.debug("executeBaseOperation {s}\n", .{@tagName(op)});
 		switch(op) {
 			.move => |info| {
 				self.executeAddOperation(allocator, side, info.dest, info.amount, info.source.ref().item);
@@ -1028,7 +1028,7 @@ pub const Command = struct { // MARK: Command
 			.addHealth => |*info| {
 				if(side == .server) {
 					info.previous = info.target.?.player.health;
-					std.debug.print("{d} {d}\n", .{info.target.?.player.health, info.health});
+					std.log.debug("{d} {d}\n", .{info.target.?.player.health, info.health});
 					info.target.?.player.health = std.math.clamp(info.target.?.player.health + info.health, 0, info.target.?.player.maxHealth);
 
 					if(info.target.?.player.health <= 0) {
@@ -1052,7 +1052,7 @@ pub const Command = struct { // MARK: Command
 			.addEnergy => |*info| {
 				if(side == .server) {
 					info.previous = info.target.?.player.energy;
-					std.debug.print("{d} {d}\n", .{info.target.?.player.energy, info.energy});
+					std.log.debug("{d} {d}\n", .{info.target.?.player.energy, info.energy});
 					
 					info.target.?.player.energy = std.math.clamp(info.target.?.player.energy + info.energy, 0, info.target.?.player.maxEnergy);
 					self.syncOperations.append(allocator, .{.energy = .{
