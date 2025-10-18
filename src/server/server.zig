@@ -123,7 +123,7 @@ pub const User = struct { // MARK: User
 
 	refCount: Atomic(u32) = .init(1),
 
-        isLoggedIn: Atomic(bool) = .init(false),
+	isLoggedIn: Atomic(bool) = .init(false),
 
 	mutex: std.Thread.Mutex = .{},
 
@@ -552,8 +552,8 @@ pub fn connectInternal(user: *User) void {
 	main.stackAllocator.free(initialList);
 	sendMessage("{s}§#ffff00 joined", .{user.name});
 
-        user.sendMessage("You are not logged in.", .{});
-        user.sendMessage("To log in, type /login <password>.", .{});
+	user.sendMessage("You are not logged in.", .{});
+	user.sendMessage("To log in, type /login <password>.", .{});
 	userMutex.lock();
 	users.append(user);
 	userMutex.unlock();
@@ -561,31 +561,31 @@ pub fn connectInternal(user: *User) void {
 }
 
 pub fn messageFrom(msg: []const u8, source: *User) void { // MARK: message
-        if(!source.isLoggedIn.load(.monotonic)) {
-                if(std.mem.startsWith(u8, msg, "/login ")) {
-                        const password = msg["/login ".len..];
-                        if(auth.verify(source.name, password)) {
-                                source.sendMessage("You are now logged in!", .{});
-                                source.isLoggedIn.store(true, .monotonic);
-                                std.log.info("User \"{f}\" logged in.", .{std.ascii.hexEscape(source.name, .upper)});
-                                return;
-                        } else |err| switch(err) {
-                                error.Unregistered => source.sendMessage("Please join the Discord server to register an account.", .{}),
-                                error.IncorrectPassword => {
-                                        std.log.warn("User \"{f}\" tried to login using an incorrect password.", .{std.ascii.hexEscape(source.name, .upper)}); // TODO: display IP.
-                                        source.sendMessage("Invalid password.", .{});
-                                },
-                                else => {
-                                        std.log.err("Login failed: {}, {?f}", .{err, @errorReturnTrace()});
-                                        source.sendMessage("Login failed, please contact an administrator.", .{});
-                                },
-                        }
-                        return;
-                }
-                source.sendMessage("You must log in to send chat messages.", .{});
+	if(!source.isLoggedIn.load(.monotonic)) {
+		if(std.mem.startsWith(u8, msg, "/login ")) {
+			const password = msg["/login ".len..];
+			if(auth.verify(source.name, password)) {
+				source.sendMessage("You are now logged in!", .{});
+				source.isLoggedIn.store(true, .monotonic);
+				std.log.info("User \"{f}\" logged in.", .{std.ascii.hexEscape(source.name, .upper)});
+				return;
+			} else |err| switch(err) {
+				error.Unregistered => source.sendMessage("Please join the Discord server to register an account.", .{}),
+				error.IncorrectPassword => {
+					std.log.warn("User \"{f}\" tried to login using an incorrect password.", .{std.ascii.hexEscape(source.name, .upper)}); // TODO: display IP.
+					source.sendMessage("Invalid password.", .{});
+				},
+				else => {
+					std.log.err("Login failed: {}, {?f}", .{err, @errorReturnTrace()});
+					source.sendMessage("Login failed, please contact an administrator.", .{});
+				},
+			}
+			return;
+		}
+		source.sendMessage("You must log in to send chat messages.", .{});
 		std.log.warn("User \"{f}\" tried to send a chat message, but was not logged in.", .{std.ascii.hexEscape(source.name, .upper)});
 		return;
-        }
+	}
 	if(msg[0] == '/') { // Command.
 		if(world.?.allowCheats) {
 			std.log.info("User \"{s}\" executed command \"{s}\"", .{source.name, msg}); // TODO use color \033[0;32m
