@@ -1928,7 +1928,6 @@ pub const Command = struct { // MARK: Command
 			var target: ?*main.server.User = null;
 
 			if(source != null and !source.?.isLoggedIn.load(.monotonic)) {
-				std.log.warn("User \"{f}\" tried to damage, but was not logged in.", .{std.ascii.hexEscape(source.?.name, .upper)});
 				return;
 			}
 			if(side == .server) {
