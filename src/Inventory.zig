@@ -1293,6 +1293,10 @@ pub const Command = struct { // MARK: Command
 
 		fn run(self: DepositOrSwap, allocator: NeverFailingAllocator, cmd: *Command, side: Side, user: ?*main.server.User, gamemode: Gamemode) error{serverFailure}!void {
 			std.debug.assert(self.source.inv.type == .normal);
+			if (user) |u| {
+				if(!u.isLoggedIn.load(.monotonic))
+					return;
+			}
 			if(self.dest.inv.type == .creative) {
 				try FillFromCreative.run(.{.dest = self.source, .item = self.dest.ref().item}, allocator, cmd, side, user, gamemode);
 				return;
@@ -1354,12 +1358,16 @@ pub const Command = struct { // MARK: Command
 		source: InventoryAndSlot,
 		amount: u16,
 
-		fn run(self: Deposit, allocator: NeverFailingAllocator, cmd: *Command, side: Side, _: ?*main.server.User, _: Gamemode) error{serverFailure}!void {
+		fn run(self: Deposit, allocator: NeverFailingAllocator, cmd: *Command, side: Side, user: ?*main.server.User, _: Gamemode) error{serverFailure}!void {
 			std.debug.assert(self.source.inv.type == .normal);
 			if(self.dest.inv.type == .creative) return;
 			if(self.dest.inv.type == .crafting) return;
 			if(self.dest.inv.type == .workbench and (self.dest.slot == 25 or self.dest.inv.type.workbench.slotInfos()[self.dest.slot].disabled)) return;
 			if(self.dest.inv.type == .workbench and !canPutIntoWorkbench(self.source)) return;
+			if (user) |u| {
+				if(!u.isLoggedIn.load(.monotonic))
+					return;
+			}
 			const itemSource = self.source.ref().item orelse return;
 			if(self.dest.ref().item) |itemDest| {
 				if(std.meta.eql(itemDest, itemSource)) {
@@ -1401,6 +1409,10 @@ pub const Command = struct { // MARK: Command
 
 		fn run(self: TakeHalf, allocator: NeverFailingAllocator, cmd: *Command, side: Side, user: ?*main.server.User, gamemode: Gamemode) error{serverFailure}!void {
 			std.debug.assert(self.dest.inv.type == .normal);
+			if (user) |u| {
+				if(!u.isLoggedIn.load(.monotonic))
+					return;
+			}
 			if(self.source.inv.type == .creative) {
 				if(self.dest.ref().item == null) {
 					const item = self.source.ref().item;
@@ -1465,6 +1477,10 @@ pub const Command = struct { // MARK: Command
 		fn run(self: Drop, allocator: NeverFailingAllocator, cmd: *Command, side: Side, user: ?*main.server.User, _: Gamemode) error{serverFailure}!void {
 			if(self.source.inv.type == .creative) return;
 			if(self.source.ref().item == null) return;
+			if (user) |u| {
+				if(!u.isLoggedIn.load(.monotonic))
+					return;
+			}
 			if(self.source.inv.type == .crafting) {
 				if(self.source.slot != self.source.inv._items.len - 1) return;
 				var _items: [1]ItemStack = .{.{.item = null, .amount = 0}};
@@ -1524,7 +1540,10 @@ pub const Command = struct { // MARK: Command
 			if(self.dest.inv.type == .workbench and (self.dest.slot == 25 or self.dest.inv.type.workbench.slotInfos()[self.dest.slot].disabled)) return;
 			if(side == .server and user != null and mode != .creative) return;
 			if(side == .client and mode != .creative) return;
-
+			if (user) |u| {
+				if(!u.isLoggedIn.load(.monotonic))
+					return;
+			}
 			if(!self.dest.ref().empty()) {
 				cmd.executeBaseOperation(allocator, .{.delete = .{
 					.source = self.dest,
@@ -1578,6 +1597,10 @@ pub const Command = struct { // MARK: Command
 			std.debug.assert(self.dest.type == .normal);
 			if(self.source.type == .creative) return;
 			if(self.source.type == .crafting) return;
+			if (user) |u| {
+				if(!u.isLoggedIn.load(.monotonic))
+					return;
+			}
 			var sourceItems = self.source._items;
 			if(self.source.type == .workbench) sourceItems = self.source._items[0..25];
 			outer: for(sourceItems, 0..) |*sourceStack, sourceSlot| {
@@ -1639,6 +1662,10 @@ pub const Command = struct { // MARK: Command
 			if(self.dest.type == .creative) return;
 			if(self.dest.type == .crafting) return;
 			if(self.dest.type == .workbench) return;
+			if (user) |u| {
+				if(!u.isLoggedIn.load(.monotonic))
+					return;
+			}
 			if(self.source.inv.type == .crafting) {
 				cmd.tryCraftingTo(allocator, self.dest, self.source, side, user);
 				return;
@@ -1682,9 +1709,13 @@ pub const Command = struct { // MARK: Command
 	const Clear = struct { // MARK: Clear
 		inv: Inventory,
 
-		pub fn run(self: Clear, allocator: NeverFailingAllocator, cmd: *Command, side: Side, _: ?*main.server.User, _: Gamemode) error{serverFailure}!void {
+		pub fn run(self: Clear, allocator: NeverFailingAllocator, cmd: *Command, side: Side, user: ?*main.server.User, _: Gamemode) error{serverFailure}!void {
 			if(self.inv.type == .creative) return;
 			if(self.inv.type == .crafting) return;
+			if (user) |u| {
+				if(!u.isLoggedIn.load(.monotonic))
+					return;
+			}
 			var items = self.inv._items;
 			if(self.inv.type == .workbench) items = self.inv._items[0..25];
 			for(items, 0..) |stack, slot| {
