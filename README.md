@@ -1,3 +1,10 @@
+# TODO
+- [ ] durable string map
+- [ ] Non-blocking auth
+- [ ] Kick
+- [ ] Homes (depends on durable string map)
+- [ ] Muting users
+
 # Cubyz
 Cubyz is a 3D voxel sandbox game (inspired by Minecraft).
 
