@@ -37,6 +37,7 @@ fn userFromID(userList: []*main.server.User, id: u32) ?*main.server.User {
 		if (userp.id == id)
 			return userp;
 	}
+	return null;
 }
 
 pub const Sync = struct { // MARK: Sync
