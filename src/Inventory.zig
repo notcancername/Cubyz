@@ -969,7 +969,7 @@ pub const Command = struct { // MARK: Command
 
 		const userList = main.server.getUserListAndIncreaseRefCount(main.stackAllocator);
 		defer main.server.freeUserListAndDecreaseRefCount(main.stackAllocator, userList);
-		std.log.debug("executeAddOperation on inventory {x} from source {any} (player {s}), {d}+={d} -> {!d}\n", .{
+		std.log.debug("executeAddOperation on inventory {x} from source {any} (player {s}), {d}+={d} -> {!d}", .{
 			@intFromEnum(inv.inv.id),
 			inv.inv.source,
 			switch (inv.inv.source) {
@@ -995,7 +995,7 @@ pub const Command = struct { // MARK: Command
 
 		const userList = main.server.getUserListAndIncreaseRefCount(main.stackAllocator);
 		defer main.server.freeUserListAndDecreaseRefCount(main.stackAllocator, userList);
-		std.log.debug("executeRemoveOperation on inventory {x} from source {any} (player {s}), {d}-={d} -> {!d}\n", .{
+		std.log.debug("executeRemoveOperation on inventory {x} from source {any} (player {s}), {d}-={d} -> {!d}", .{
 			@intFromEnum(inv.inv.id),
 			inv.inv.source,
 			switch (inv.inv.source) {
@@ -1033,7 +1033,7 @@ pub const Command = struct { // MARK: Command
 
 	fn executeBaseOperation(self: *Command, allocator: NeverFailingAllocator, _op: BaseOperation, side: Side) void { // MARK: executeBaseOperation()
 		var op = _op;
-		std.log.debug("executeBaseOperation {s}\n", .{@tagName(op)});
+		std.log.debug("executeBaseOperation {s}", .{@tagName(op)});
 		switch(op) {
 			.move => |info| {
 				self.executeAddOperation(allocator, side, info.dest, info.amount, info.source.ref().item);
@@ -1069,7 +1069,7 @@ pub const Command = struct { // MARK: Command
 			.addHealth => |*info| {
 				if(side == .server) {
 					info.previous = info.target.?.player.health;
-					std.log.debug("{d} {d}\n", .{info.target.?.player.health, info.health});
+					std.log.debug("{d} {d}", .{info.target.?.player.health, info.health});
 					info.target.?.player.health = std.math.clamp(info.target.?.player.health + info.health, 0, info.target.?.player.maxHealth);
 
 					if(info.target.?.player.health <= 0) {
@@ -1093,7 +1093,7 @@ pub const Command = struct { // MARK: Command
 			.addEnergy => |*info| {
 				if(side == .server) {
 					info.previous = info.target.?.player.energy;
-					std.log.debug("{d} {d}\n", .{info.target.?.player.energy, info.energy});
+					std.log.debug("{d} {d}", .{info.target.?.player.energy, info.energy});
 					
 					info.target.?.player.energy = std.math.clamp(info.target.?.player.energy + info.energy, 0, info.target.?.player.maxEnergy);
 					self.syncOperations.append(allocator, .{.energy = .{
