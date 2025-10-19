@@ -268,7 +268,7 @@ pub const User = struct { // MARK: User
 	pub fn receiveData(self: *User, reader: *BinaryReader) !void {
 		self.mutex.lock();
 		defer self.mutex.unlock();
-		const position: [3]f64 = try reader.readVec(Vec3d);
+		const position: [3]f64 = vec.clampMag(try reader.readVec(Vec3d), 1_000_000_000);
 		const velocity: [3]f64 = try reader.readVec(Vec3d);
 		const rotation: [3]f32 = try reader.readVec(Vec3f);
 		self.player.rot = rotation;

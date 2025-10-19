@@ -1042,7 +1042,7 @@ pub const Protocols = struct {
 					main.items.Inventory.Sync.setGamemode(null, try reader.readEnum(main.game.Gamemode));
 				},
 				.teleport => {
-					game.Player.setPosBlocking(try reader.readVec(Vec3d));
+					game.Player.setPosBlocking(vec.clampMag(try reader.readVec(Vec3d), 1_000_000_000));
 				},
 				.worldEditPos => {
 					const typ = try reader.readEnum(WorldEditPosition);
