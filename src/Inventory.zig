@@ -972,7 +972,7 @@ pub const Command = struct { // MARK: Command
 			@intFromEnum(inv.inv.id),
 			inv.inv.source,
 			switch (inv.inv.source) {
-				.player, .hand => |userId| if (userFromID(userList, userId)) |user| user.name else "???",
+				.playerInventory, .hand => |userId| if (userFromID(userList, userId)) |user| user.name else "???",
 				else => "none",
 			},
 			inv.ref().amount,
@@ -998,7 +998,7 @@ pub const Command = struct { // MARK: Command
 			@intFromEnum(inv.inv.id),
 			inv.inv.source,
 			switch (inv.inv.source) {
-				.player, .hand => |userId| if (userFromID(userList, userId)) |user| user.name else "???",
+				.playerInventory, .hand => |userId| if (userFromID(userList, userId)) |user| user.name else "???",
 				else => "none",
 			},
 			inv.ref().amount,
