@@ -31,6 +31,14 @@ pub const Callbacks = struct {
 	onLastCloseCallback: ?*const fn(Source) void = null,
 };
 
+// HACK: yolo, delete this later!
+fn userFromID(userList: []*main.server.User, id: u32) ?*main.server.User {
+	for (userList) |userp| {
+		if (userp.id == id)
+			return userp;
+	}
+}
+
 pub const Sync = struct { // MARK: Sync
 
 	pub const ClientSide = struct {
@@ -957,7 +965,20 @@ pub const Command = struct { // MARK: Command
 		}
 		std.debug.assert(inv.ref().item == null or std.meta.eql(inv.ref().item.?, item.?));
 		inv.ref().item = item.?;
-		std.log.debug("executeAddOperation {d}+{d}\n", .{inv.ref().amount, amount});
+
+		const userList = main.server.getUserListAndIncreaseRefCount(main.stackAllocator);
+		defer main.server.freeUserListAndDecreaseRefCount(main.stackAllocator, userList);
+		std.log.debug("executeAddOperation on inventory {x} from source {any} (player {s}), {d}+={d} -> {!d}\n", .{
+			@intFromEnum(inv.inv.id),
+			inv.inv.source,
+			switch (inv.inv.source) {
+				.player, .hand => |userId| if (userFromID(userList, userId)) |user| user.name else "???",
+				else => "none",
+			},
+			inv.ref().amount,
+			amount,
+			std.math.add(u16, inv.ref().amount, amount),
+		});
 		inv.ref().amount += amount;
 		std.debug.assert(inv.ref().amount <= item.?.stackSize());
 	}
@@ -970,7 +991,20 @@ pub const Command = struct { // MARK: Command
 				.amount = amount,
 			}});
 		}
-		std.log.debug("executeRemoveOperation {d}+{d}\n", .{inv.ref().amount, amount});
+
+		const userList = main.server.getUserListAndIncreaseRefCount(main.stackAllocator);
+		defer main.server.freeUserListAndDecreaseRefCount(main.stackAllocator, userList);
+		std.log.debug("executeRemoveOperation on inventory {x} from source {any} (player {s}), {d}-={d} -> {!d}\n", .{
+			@intFromEnum(inv.inv.id),
+			inv.inv.source,
+			switch (inv.inv.source) {
+				.player, .hand => |userId| if (userFromID(userList, userId)) |user| user.name else "???",
+				else => "none",
+			},
+			inv.ref().amount,
+			amount,
+			std.math.sub(u16, inv.ref().amount, amount),
+		});
 		if (amount > inv.ref().amount) {
 			std.log.err("the remove bug got triggered again, {d} - {d} < 0", .{inv.ref().amount, amount});
 			return;
