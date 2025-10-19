@@ -971,6 +971,9 @@ pub const Command = struct { // MARK: Command
 			}});
 		}
 		std.log.debug("executeRemoveOperation {d}+{d}\n", .{inv.ref().amount, amount});
+		if (amount > inv.ref().amount) {
+			std.log.err("the remove bug got triggered again, {d} - {d} < 0", .{inv.ref().amount(), amount});
+		}
 		inv.ref().amount -= amount;
 		if(inv.ref().amount == 0) {
 			inv.ref().item = null;
