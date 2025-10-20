@@ -154,7 +154,7 @@ pub const ClientEntityManager = struct {
 		defer mutex.unlock();
 
 		for(entities.items()) |ent| {
-			if(ent.id == game.Player.id or ent.name.len == 0) continue; // don't render local player
+			if(ent.id == game.Player.id or ent.name.len == 0) continue; // don't render local player but MARK: render if in freecam
 			const pos3d = ent.getRenderPosition() - playerPos;
 			const pos4f = Vec4f{
 				@floatCast(pos3d[0]),
@@ -169,11 +169,41 @@ pub const ClientEntityManager = struct {
 			const xCenter = (1 + projectedPos[0]/projectedPos[3])*@as(f32, @floatFromInt(main.Window.width/2));
 			const yCenter = (1 - projectedPos[1]/projectedPos[3])*@as(f32, @floatFromInt(main.Window.height/2));
 
+			const nameSize = 32;
+			const coordSize = 20;
+			const distSize = 20;
+
 			graphics.draw.setColor(0xff000000);
-			var buf = graphics.TextBuffer.init(main.stackAllocator, ent.name, .{.color = 0}, false, .center);
-			defer buf.deinit();
-			const size = buf.calculateLineBreaks(32, 1024);
-			buf.render(xCenter - size[0]/2, yCenter - size[1], 32);
+
+			var nameBuf = graphics.TextBuffer.init(main.stackAllocator, ent.name, .{.color = 0xffffff}, false, .center);
+			defer nameBuf.deinit();
+			var nameBufSize = nameBuf.calculateLineBreaks(nameSize, 1024);
+
+			const coords = std.fmt.allocPrint(main.stackAllocator.allocator, "({d:.0}, {d:.0}, {d:.0})", .{ent.pos[0], ent.pos[1], ent.pos[2]}) catch unreachable;
+			defer main.stackAllocator.free(coords);
+
+			var coordBuf = graphics.TextBuffer.init(main.stackAllocator, coords, .{.color = 0xffffff}, false, .center);
+			defer coordBuf.deinit();
+			var coordBufSize = coordBuf.calculateLineBreaks(coordSize, 1024);
+
+			//const playerGamePos = game.Player.super.pos;
+			const posDiff = ent.pos - game.Player.super.pos;
+			const distance = @sqrt(posDiff[0] * posDiff[0] + posDiff[1] * posDiff[1] + posDiff[2] * posDiff[2]);
+			const distStr = if (distance < 1000)
+				std.fmt.allocPrint(main.stackAllocator.allocator, "{d:.0} m", .{distance}) catch unreachable
+				else std.fmt.allocPrint(main.stackAllocator.allocator, "{d:.1} km", .{distance / 1000}) catch unreachable;
+			defer main.stackAllocator.free(distStr);
+
+			var distBuf = graphics.TextBuffer.init(main.stackAllocator, distStr, .{.color = 0xffffff}, false, .center);
+			defer distBuf.deinit();
+			const distBufSize = distBuf.calculateLineBreaks(distSize, 1024);
+
+			coordBufSize[1] += distBufSize[1];
+			nameBufSize[1] += coordBufSize[1];
+
+			nameBuf.render(xCenter - nameBufSize[0]/2, yCenter - nameBufSize[1], nameSize);
+			coordBuf.render(xCenter - coordBufSize[0]/2, yCenter - coordBufSize[1], coordSize);
+			distBuf.render(xCenter - distBufSize[0]/2, yCenter - distBufSize[1], distSize);
 		}
 	}
 
@@ -209,10 +239,7 @@ pub const ClientEntityManager = struct {
 					@floatCast(pos[1]),
 					@floatCast(pos[2] - 1.0 + 0.09375),
 				}))
-				.mul(Mat4f.rotationZ(-ent.rot[2]))
-				//.mul(Mat4f.rotationY(-ent.rot[1]))
-				//.mul(Mat4f.rotationX(-ent.rot[0]))
-			);
+				.mul(Mat4f.rotationZ(-ent.rot[2])));
 			const modelViewMatrix = game.camera.viewMatrix.mul(modelMatrix);
 			c.glUniformMatrix4fv(uniforms.viewMatrix, 1, c.GL_TRUE, @ptrCast(&modelViewMatrix));
 			c.glDrawElements(c.GL_TRIANGLES, 6*modelSize, c.GL_UNSIGNED_INT, null);
