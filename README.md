@@ -1,7 +1,11 @@
 # TODO
 - [ ] durable string map
-- [ ] Non-blocking auth
-- [ ] Kick
+- [x] Non-blocking auth
+- [ ] simple teleport prevention
+- [ ] prevent teleporting other players
+- [ ] prevent opening nonexistant chests
+- [ ] prevent teleporting the host
+- [ ] prevent opening others' inventories
 - [ ] Homes (depends on durable string map)
 - [ ] Muting users
 
