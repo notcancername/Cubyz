@@ -3,7 +3,7 @@ const std = @import("std");
 pub const gui = @import("gui/gui.zig");
 pub const server = @import("server/server.zig");
 
-pub const auth = @import("server/auth.zig");
+pub const Auth = @import("server/Auth.zig");
 pub const audio = @import("audio.zig");
 pub const assets = @import("assets.zig");
 pub const block_entity = @import("block_entity.zig");
@@ -52,6 +52,8 @@ var global_gpa = std.heap.GeneralPurposeAllocator(.{.thread_safe = true}){};
 var handled_gpa = heap.ErrorHandlingAllocator.init(global_gpa.allocator());
 pub const globalAllocator: heap.NeverFailingAllocator = handled_gpa.allocator();
 pub var threadPool: *utils.ThreadPool = undefined;
+
+pub var auth: Auth = undefined;
 
 pub fn initThreadLocals() void {
 	seed = @bitCast(@as(i64, @truncate(std.time.nanoTimestamp())));
@@ -657,9 +659,6 @@ pub fn main() void { // MARK: main()
 	items.globalInit();
 	defer items.deinit();
 
-	auth.globalInit() catch std.log.err("failed to initialize auth", .{});
-	defer auth.globalDeinit();
-
 	itemdrop.ItemDropRenderer.init();
 	defer itemdrop.ItemDropRenderer.deinit();
 
@@ -685,6 +684,12 @@ pub fn main() void { // MARK: main()
 
 	particles.ParticleManager.init();
 	defer particles.ParticleManager.deinit();
+
+	auth = .{};
+	auth.init() catch |e| {
+		std.debug.panic("failed to init auth, is the bot down? {}", .{e});
+	};
+	defer auth.deinit();
 
 	if(settings.playerName.len == 0) {
 		gui.openWindow("change_name");
@@ -731,6 +736,9 @@ pub fn main() void { // MARK: main()
 
 	while(c.glfwWindowShouldClose(Window.window) == 0) {
 		heap.GarbageCollection.syncPoint();
+		auth.drain() catch |err| {
+			std.log.err("draining auth failed, {}", .{err});
+		};
 		const isHidden = c.glfwGetWindowAttrib(Window.window, c.GLFW_ICONIFIED) == c.GLFW_TRUE;
 		if(!isHidden) {
 			c.glfwSwapBuffers(Window.window);
