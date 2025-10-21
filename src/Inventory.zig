@@ -1668,11 +1668,6 @@ pub const Command = struct { // MARK: Command
 					}
 				}
 				if(side == .server) {
-					if (user == null) {
-						std.log.err("server side, but null user! bug", .{});
-						return;
-					}
-
 					const direction = vec.rotateZ(vec.rotateX(Vec3f{0, 1, 0}, -user.?.player.rot[0]), -user.?.player.rot[2]);
 					main.server.world.?.drop(sourceStack.clone(), user.?.player.pos, direction, 20);
 				}
