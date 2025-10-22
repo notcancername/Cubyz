@@ -59,7 +59,7 @@ const LinuxImpl = struct { // MARK: LinuxImpl
 	var fd: c_int = undefined;
 	var watchDescriptors: std.StringHashMap(*DirectoryInfo) = undefined;
 	var callbacks: std.AutoHashMap(c_int, *DirectoryInfo) = undefined;
-	var mutex: std.Thread.Mutex = .{};
+	var mutex: std.Thread.Mutex.Recursive = .init;
 
 	fn init() void {
 		fd = c.inotify_init();
@@ -218,7 +218,7 @@ const WindowsImpl = struct { // MARK: WindowsImpl
 	var notificationHandlers: std.StringHashMap(*DirectoryInfo) = undefined;
 	var callbacks: main.List(*DirectoryInfo) = undefined;
 	var justTheHandles: main.List(HANDLE) = undefined;
-	var mutex: std.Thread.Mutex = .{};
+	var mutex: std.Thread.Mutex.Recursive = .init;
 
 	const DirectoryInfo = struct {
 		callback: CallbackFunction,

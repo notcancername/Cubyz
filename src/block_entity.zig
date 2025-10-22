@@ -103,7 +103,7 @@ fn BlockEntityDataStorage(T: type) type {
 		var freeIndexList: main.ListUnmanaged(BlockEntityIndex) = .{};
 		var nextIndex: BlockEntityIndex = @enumFromInt(0);
 		var storage: main.utils.SparseSet(DataT, BlockEntityIndex) = .{};
-		pub var mutex: std.Thread.Mutex = .{};
+		pub var mutex: std.Thread.Mutex.Recursive = .init;
 
 		pub fn init() void {
 			storage = .{};
@@ -308,7 +308,7 @@ pub const BlockEntityTypes = struct {
 			}
 		});
 		var textureDeinitList: main.List(graphics.Texture) = undefined;
-		var textureDeinitLock: std.Thread.Mutex = .{};
+		var textureDeinitLock: std.Thread.Mutex.Recursive = .init;
 		var pipeline: graphics.Pipeline = undefined;
 		var uniforms: struct {
 			ambientLight: c_int,

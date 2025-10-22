@@ -19,7 +19,7 @@ pub const RegionFile = struct { // MARK: RegionFile
 
 	chunks: [regionVolume][]u8 = @splat(&.{}),
 	pos: chunk.ChunkPosition,
-	mutex: std.Thread.Mutex = .{},
+	mutex: std.Thread.Mutex.Recursive = .init,
 	modified: bool = false,
 	refCount: Atomic(u16) = .init(1),
 	storedInHashMap: bool = false,
@@ -194,7 +194,7 @@ const HashContext = struct {
 	}
 };
 var stillUsedHashMap: std.HashMap(chunk.ChunkPosition, *RegionFile, HashContext, 50) = undefined;
-var hashMapMutex: std.Thread.Mutex = .{};
+var hashMapMutex: std.Thread.Mutex.Recursive = .init;
 
 fn cacheDeinit(region: *RegionFile) void {
 	if(region.refCount.load(.monotonic) != 1) { // Someone else might still use it, so we store it in the hashmap.

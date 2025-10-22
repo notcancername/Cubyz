@@ -43,7 +43,7 @@ fn userFromID(userList: []*main.server.User, id: u32) ?*main.server.User {
 pub const Sync = struct { // MARK: Sync
 
 	pub const ClientSide = struct {
-		pub var mutex: std.Thread.Mutex = .{};
+		pub var mutex: std.Thread.Mutex.Recursive = .init;
 		var commands: main.utils.CircularBufferQueue(Command) = undefined;
 		var maxId: InventoryId = @enumFromInt(0);
 		var freeIdList: main.List(InventoryId) = undefined;
@@ -253,7 +253,7 @@ pub const Sync = struct { // MARK: Sync
 				}
 			}
 		};
-		pub var mutex: std.Thread.Mutex = .{};
+		pub var mutex: std.Thread.Mutex.Recursive = .init;
 
 		var inventories: main.List(ServerInventory) = undefined;
 		var maxId: InventoryId = @enumFromInt(0);

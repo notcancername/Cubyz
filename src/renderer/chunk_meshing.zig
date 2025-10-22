@@ -673,7 +673,7 @@ pub const ChunkMesh = struct { // MARK: ChunkMesh
 	finishedMeshing: bool = false, // Must be synced with node.finishedMeshing in mesh_storage.zig
 	finishedLighting: bool = false,
 	litNeighbors: Atomic(u32) = .init(0),
-	mutex: std.Thread.Mutex = .{},
+	mutex: std.Thread.Mutex.Recursive = .init,
 	chunkAllocation: graphics.SubAllocation = .{.start = 0, .len = 0},
 	min: Vec3f = undefined,
 	max: Vec3f = undefined,
@@ -1339,7 +1339,7 @@ pub const ChunkMesh = struct { // MARK: ChunkMesh
 		self.uploadChunkPosition();
 	}
 
-	fn deadlockFreeDoubleLock(m1: *std.Thread.Mutex, m2: *std.Thread.Mutex) void {
+	fn deadlockFreeDoubleLock(m1: *std.Thread.Mutex.Recursive, m2: *std.Thread.Mutex.Recursive) void {
 		if(@intFromPtr(m1) < @intFromPtr(m2)) {
 			m1.lock();
 			m2.lock();

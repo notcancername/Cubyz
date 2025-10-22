@@ -532,7 +532,7 @@ pub fn MemoryPool(Item: type) type { // MARK: MemoryPool
 		free_list: ?NodePtr = null,
 		freeAllocations: usize = 0,
 		totalAllocations: usize = 0,
-		mutex: std.Thread.Mutex = .{},
+		mutex: std.Thread.Mutex.Recursive = .init,
 
 		/// Creates a new memory pool.
 		pub fn init(allocator: NeverFailingAllocator) Pool {
@@ -763,7 +763,7 @@ pub fn PowerOfTwoPoolAllocator(minSize: comptime_int, maxSize: comptime_int, max
 
 		arena: NeverFailingArenaAllocator,
 		buckets: [bucketCount]Bucket = @splat(.{}),
-		mutex: std.Thread.Mutex = .{},
+		mutex: std.Thread.Mutex.Recursive = .init,
 
 		pub fn init(backingAllocator: NeverFailingAllocator) Self {
 			return .{.arena = .init(backingAllocator)};

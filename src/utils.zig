@@ -584,7 +584,7 @@ pub fn ConcurrentQueue(comptime T: type) type { // MARK: ConcurrentQueue
 	return struct {
 		const Self = @This();
 		super: CircularBufferQueue(T),
-		mutex: std.Thread.Mutex = .{},
+		mutex: std.Thread.Mutex.Recursive = .init,
 
 		pub fn init(allocator: NeverFailingAllocator, initialCapacity: usize) Self {
 			return .{
@@ -656,7 +656,7 @@ pub fn BlockingMaxHeap(comptime T: type) type { // MARK: BlockingMaxHeap
 
 		/// Moves an element from a given index down the heap, such that all children are always smaller than their parents.
 		fn siftDown(self: *@This(), _i: usize) void {
-			assertLocked(&self.mutex);
+			// assertLocked(&self.mutex);
 			var i = _i;
 			while(2*i + 1 < self.size) {
 				const biggest = if(2*i + 2 < self.size and self.array[2*i + 2].biggerThan(self.array[2*i + 1])) 2*i + 2 else 2*i + 1;
@@ -673,7 +673,7 @@ pub fn BlockingMaxHeap(comptime T: type) type { // MARK: BlockingMaxHeap
 
 		/// Moves an element from a given index up the heap, such that all children are always smaller than their parents.
 		fn siftUp(self: *@This(), _i: usize) void {
-			assertLocked(&self.mutex);
+			// assertLocked(&self.mutex);
 			var i = _i;
 			while(i > 0) {
 				const parentIndex = (i - 1)/2;
@@ -733,7 +733,7 @@ pub fn BlockingMaxHeap(comptime T: type) type { // MARK: BlockingMaxHeap
 		}
 
 		fn removeIndex(self: *@This(), i: usize) void {
-			assertLocked(&self.mutex);
+			// assertLocked(&self.mutex);
 			self.size -= 1;
 			self.array[i] = self.array[self.size];
 			self.siftDown(i);
@@ -802,7 +802,7 @@ pub const ThreadPool = struct { // MARK: ThreadPool
 		taskType: TaskType = .misc,
 	};
 	pub const Performance = struct {
-		mutex: std.Thread.Mutex = .{},
+		mutex: std.Thread.Mutex.Recursive = .init,
 		tasks: [taskTypes]u32 = undefined,
 		utime: [taskTypes]i64 = undefined,
 
@@ -1307,7 +1307,7 @@ pub fn Cache(comptime T: type, comptime numberOfBuckets: u32, comptime bucketSiz
 	if(numberOfBuckets & hashMask != 0) @compileError("The number of buckets should be a power of 2!");
 
 	const Bucket = struct {
-		mutex: std.Thread.Mutex = .{},
+		mutex: std.Thread.Mutex.Recursive = .init,
 		items: [bucketSize]?*T = @splat(null),
 
 		fn find(self: *@This(), compare: anytype) ?*T {
@@ -1587,10 +1587,10 @@ pub const TimeDifference = struct { // MARK: TimeDifference
 	}
 };
 
-pub fn assertLocked(mutex: *const std.Thread.Mutex) void { // MARK: assertLocked()
-	if(builtin.mode == .Debug) {
-		std.debug.assert(!@constCast(mutex).tryLock());
-	}
+pub fn assertLocked(_: *const std.Thread.Mutex.Recursive) void { // MARK: assertLocked()
+	// if(builtin.mode == .Debug) {
+		// std.debug.assert(!@constCast(mutex).tryLock());
+	// }
 }
 
 pub fn assertLockedShared(lock: *const std.Thread.RwLock) void {

@@ -60,7 +60,7 @@ pub const ItemDropManager = struct { // MARK: ItemDropManager
 
 	indices: [maxCapacity]u16 = undefined,
 
-	emptyMutex: std.Thread.Mutex = .{},
+	emptyMutex: std.Thread.Mutex.Recursive = .init,
 	isEmpty: std.bit_set.ArrayBitSet(usize, maxCapacity),
 
 	changeQueue: main.utils.ConcurrentQueue(union(enum) {add: struct {u16, ItemDrop}, remove: u16}),
@@ -472,7 +472,7 @@ pub const ClientItemDropManager = struct { // MARK: ClientItemDropManager
 
 	var instance: ?*ClientItemDropManager = null;
 
-	var mutex: std.Thread.Mutex = .{};
+	var mutex: std.Thread.Mutex.Recursive = .init;
 
 	pub fn init(self: *ClientItemDropManager, allocator: NeverFailingAllocator) void {
 		std.debug.assert(instance == null); // Only one instance allowed.

@@ -86,7 +86,7 @@ const ChunkManager = struct { // MARK: ChunkManager
 		}
 	};
 	var entityChunkHashMap: std.HashMap(chunk.ChunkPosition, *EntityChunk, HashContext, 50) = undefined;
-	var mutex: std.Thread.Mutex = .{};
+	var mutex: std.Thread.Mutex.Recursive = .init;
 
 	fn getEntityChunkAndIncreaseRefCount(pos: chunk.ChunkPosition) ?*EntityChunk {
 		std.debug.assert(pos.voxelSize == 1);
@@ -441,7 +441,7 @@ pub const ServerWorld = struct { // MARK: ServerWorld
 
 	wio: WorldIO = undefined,
 
-	mutex: std.Thread.Mutex = .{},
+	mutex: std.Thread.Mutex.Recursive = .init,
 
 	chunkUpdateQueue: main.utils.CircularBufferQueue(ChunkUpdateRequest),
 	regionUpdateQueue: main.utils.CircularBufferQueue(RegionUpdateRequest),

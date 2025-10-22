@@ -258,7 +258,7 @@ pub const Chunk = struct { // MARK: Chunk
 	widthShift: u5,
 
 	blockPosToEntityDataMap: std.AutoHashMapUnmanaged(u32, main.block_entity.BlockEntityIndex),
-	blockPosToEntityDataMapMutex: std.Thread.Mutex,
+	blockPosToEntityDataMapMutex: std.Thread.Mutex.Recursive,
 
 	pub fn init(pos: ChunkPosition) *Chunk {
 		const self = memoryPool.create();
@@ -272,7 +272,7 @@ pub const Chunk = struct { // MARK: Chunk
 			.voxelSizeMask = pos.voxelSize - 1,
 			.widthShift = voxelSizeShift + chunkShift,
 			.blockPosToEntityDataMap = .{},
-			.blockPosToEntityDataMapMutex = .{},
+			.blockPosToEntityDataMapMutex = .init,
 		};
 		self.data.init();
 		return self;
@@ -359,7 +359,7 @@ pub const ServerChunk = struct { // MARK: ServerChunk
 	generated: bool = false,
 	wasStored: bool = false,
 
-	mutex: std.Thread.Mutex = .{},
+	mutex: std.Thread.Mutex.Recursive = .init,
 	refCount: std.atomic.Value(u16),
 
 	pub fn initAndIncreaseRefCount(pos: ChunkPosition) *ServerChunk {
@@ -375,7 +375,7 @@ pub const ServerChunk = struct { // MARK: ServerChunk
 				.voxelSizeMask = pos.voxelSize - 1,
 				.widthShift = voxelSizeShift + chunkShift,
 				.blockPosToEntityDataMap = .{},
-				.blockPosToEntityDataMapMutex = .{},
+				.blockPosToEntityDataMapMutex = .init,
 			},
 			.refCount = .init(1),
 		};
