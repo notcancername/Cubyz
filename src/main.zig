@@ -53,7 +53,7 @@ var handled_gpa = heap.ErrorHandlingAllocator.init(global_gpa.allocator());
 pub const globalAllocator: heap.NeverFailingAllocator = handled_gpa.allocator();
 pub var threadPool: *utils.ThreadPool = undefined;
 
-pub var auth: Auth = undefined;
+// pub var auth: Auth = undefined;
 
 pub fn initThreadLocals() void {
 	seed = @bitCast(@as(i64, @truncate(std.time.nanoTimestamp())));
@@ -685,11 +685,11 @@ pub fn main() void { // MARK: main()
 	particles.ParticleManager.init();
 	defer particles.ParticleManager.deinit();
 
-	auth = .{};
-	auth.init() catch |e| {
-		std.debug.panic("failed to init auth, is the bot down? {}", .{e});
-	};
-	defer auth.deinit();
+	// auth = .{};
+	// auth.init() catch |e| {
+		// std.debug.panic("failed to init auth, is the bot down? {}", .{e});
+	// };
+	// defer auth.deinit();
 
 	if(settings.playerName.len == 0) {
 		gui.openWindow("change_name");
@@ -736,9 +736,9 @@ pub fn main() void { // MARK: main()
 
 	while(c.glfwWindowShouldClose(Window.window) == 0) {
 		heap.GarbageCollection.syncPoint();
-		auth.drain() catch |err| {
-			std.log.err("draining auth failed, {}", .{err});
-		};
+		// auth.drain() catch |err| {
+			// std.log.err("draining auth failed, {}", .{err});
+		// };
 		const isHidden = c.glfwGetWindowAttrib(Window.window, c.GLFW_ICONIFIED) == c.GLFW_TRUE;
 		if(!isHidden) {
 			c.glfwSwapBuffers(Window.window);
