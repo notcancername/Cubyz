@@ -8,6 +8,7 @@
 - [ ] prevent opening others' inventories
 - [ ] Homes (depends on durable string map)
 - [ ] Muting users
+- [ ] Block update logs
 
 # Cubyz
 Cubyz is a 3D voxel sandbox game (inspired by Minecraft).
