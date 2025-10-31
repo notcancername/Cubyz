@@ -3,6 +3,7 @@ const std = @import("std");
 pub const gui = @import("gui/gui.zig");
 pub const server = @import("server/server.zig");
 
+pub const ProfilingAllocator = @import("ProfilingAllocator.zig");
 pub const Auth = @import("server/Auth.zig");
 pub const audio = @import("audio.zig");
 pub const assets = @import("assets.zig");
@@ -47,23 +48,74 @@ const Vec3d = vec.Vec3d;
 
 pub threadlocal var stackAllocator: heap.NeverFailingAllocator = undefined;
 pub threadlocal var seed: u64 = undefined;
-threadlocal var stackAllocatorBase: heap.StackAllocator = undefined;
-var global_gpa = std.heap.GeneralPurposeAllocator(.{.thread_safe = true}){};
+threadlocal var stackAllocatorBase: ProfilingAllocator = undefined;
+threadlocal var stackAllocatorHandled: heap.ErrorHandlingAllocator = undefined;
+var global_gpa: ProfilingAllocator = .init(std.heap.smp_allocator, std.heap.smp_allocator);
 var handled_gpa = heap.ErrorHandlingAllocator.init(global_gpa.allocator());
 pub const globalAllocator: heap.NeverFailingAllocator = handled_gpa.allocator();
 pub var threadPool: *utils.ThreadPool = undefined;
+var _memoryProfileStackAllocators: std.ArrayListUnmanaged(*ProfilingAllocator) = .empty;
+var _memoryProfileStackAllocatorsMutex: std.Thread.Mutex = .{};
+
+pub fn writeMemoryProfile(writer: *std.Io.Writer, allocator: std.mem.Allocator) !void {
+	try writer.print("global allocator profile:\n", .{});
+	try global_gpa.dumpAggregates(allocator, writer);
+
+	_memoryProfileStackAllocatorsMutex.lock();
+	defer _memoryProfileStackAllocatorsMutex.unlock();
+	for(_memoryProfileStackAllocators.items, 0..) |pa, i| {
+		try writer.print("stack allocator {d} profile:\n", .{i});
+		try pa.dumpAggregates(allocator, writer);
+	}
+}
+
+pub fn dumpMemoryProfile() void {
+	// TODO: profile just once lol
+	var buf: [8 << 10]u8 = undefined;
+	var stdout_wr = std.fs.File.stderr().writerStreaming(&buf);
+	var buf2: [8 << 10]u8 = undefined;
+	var log_wr = logFile.?.writerStreaming(&buf2);
+	var buf3: [8 << 10]u8 = undefined;
+	var logts_wr = logFileTs.?.writerStreaming(&buf3);
+	writeMemoryProfile(&stdout_wr.interface, std.heap.smp_allocator) catch {};
+	writeMemoryProfile(&log_wr.interface, std.heap.smp_allocator) catch {};
+	writeMemoryProfile(&logts_wr.interface, std.heap.smp_allocator) catch {};
+	stdout_wr.interface.flush() catch {};
+	log_wr.interface.flush() catch {};
+	logts_wr.interface.flush() catch {};
+}
+
+pub fn handleSigusr1(_: i32) callconv(.c) void {
+	// this is technically not allowed, but we're doing it anyway just
+	// because it's the easiest thing to do. so, yolo!
+	dumpMemoryProfile();
+}
 
 pub var auth: Auth = undefined;
 
 pub fn initThreadLocals() void {
 	seed = @bitCast(@as(i64, @truncate(std.time.nanoTimestamp())));
-	stackAllocatorBase = heap.StackAllocator.init(globalAllocator, 1 << 23);
-	stackAllocator = stackAllocatorBase.allocator();
+	stackAllocatorBase = .init(std.heap.smp_allocator, std.heap.smp_allocator);
+	stackAllocatorHandled = heap.ErrorHandlingAllocator.init(stackAllocatorBase.allocator());
+	stackAllocator = stackAllocatorHandled.allocator();
+	{
+	_memoryProfileStackAllocatorsMutex.lock();
+	defer _memoryProfileStackAllocatorsMutex.unlock();
+	_memoryProfileStackAllocators.append(std.heap.smp_allocator, &stackAllocatorBase) catch {};
+	}
 	heap.GarbageCollection.addThread();
 }
 
 pub fn deinitThreadLocals() void {
 	stackAllocatorBase.deinit();
+	{
+	_memoryProfileStackAllocatorsMutex.lock();
+	defer _memoryProfileStackAllocatorsMutex.unlock();
+	for(_memoryProfileStackAllocators.items, 0..) |pa, i| {
+		if(pa == &stackAllocatorBase)
+		std.debug.assert(_memoryProfileStackAllocators.swapRemove(i) == pa);
+	}
+	}
 	heap.GarbageCollection.removeThread();
 }
 
@@ -564,12 +616,25 @@ pub fn convertJsonToZon(jsonPath: []const u8) void { // TODO: Remove after #480
 }
 
 pub fn main() void { // MARK: main()
-	defer if(global_gpa.deinit() == .leak) {
-		std.log.err("Memory leak", .{});
-	};
+	// defer if(global_gpa.deinit() == .leak) {
+	// std.log.err("Memory leak", .{});
+	// };
 	defer heap.GarbageCollection.assertAllThreadsStopped();
 	initThreadLocals();
 	defer deinitThreadLocals();
+
+	{
+		const sa = std.posix.Sigaction{
+			.handler = .{ .handler = &handleSigusr1 },
+			.mask = std.posix.sigemptyset(),
+			.flags = 0,
+		};
+		std.posix.sigaction(
+			std.posix.SIG.USR1,
+			&sa,
+			null,
+		);
+	}
 
 	initLogging();
 	defer deinitLogging();
