@@ -162,7 +162,7 @@ pub const StructureMapGenerator = struct {
 	}
 };
 
-const cacheSize = 1 << 10; // Must be a power of 2!
+const cacheSize = 1 << 7; // Must be a power of 2!
 const cacheMask = cacheSize - 1;
 const associativity = 8;
 var cache: Cache(StructureMapFragment, cacheSize, associativity, StructureMapFragment.deferredDeinit) = .{};
