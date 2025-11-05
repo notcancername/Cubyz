@@ -118,6 +118,9 @@ pub const User = struct { // MARK: User
     inventory: ?InventoryId = null,
     handInventory: ?InventoryId = null,
 
+    hasSetHome: Atomic(bool) = .init(false),
+    setHomePos: Vec3d = @splat(0),
+
     connected: Atomic(bool) = .init(true),
 
     refCount: Atomic(u32) = .init(1),
@@ -573,6 +576,59 @@ pub fn messageFrom(msg: []const u8, source: *User) void { // MARK: message
         std.log.warn("User \"{f}\" tried to send a chat message, but was not logged in.", .{std.ascii.hexEscape(source.name, .upper)});
         return;
     }
+
+    if (std.mem.eql(u8, msg, "/help")) {
+        source.sendRawMessage(
+            \\ Commands available:
+            \\ /help: Show this help
+            \\ /sethome: Set your home
+            \\ /home: Teleport to home
+            \\ /spawn: Teleport to spawn
+            \\ /die: Die
+        );
+        if (world.?.allowCheats) {
+            command.execute("help", source);
+        }
+        return;
+    }
+
+    if (std.mem.eql(u8, msg, "/sethome")) {
+        {
+            source.mutex.lock();
+            defer source.mutex.unlock();
+            source.setHomePos = source.*.player.pos;
+        }
+        source.hasSetHome.store(true, .monotonic);
+        source.sendRawMessage("Home set. Use /home to visit.");
+        return;
+    }
+
+    if (std.mem.eql(u8, msg, "/home")) {
+        if (source.hasSetHome.load(.monotonic)) {
+            const home = get_home: {
+                source.mutex.lock();
+                defer source.mutex.unlock();
+                break :get_home source.setHomePos;
+            };
+            main.network.Protocols.genericUpdate.sendTPCoordinates(source.conn, home);
+            source.sendRawMessage("Teleported to home.");
+        } else {
+            source.sendRawMessage("No Home set. Do /sethome to set your home.");
+        }
+        return;
+    }
+
+    if (std.mem.eql(u8, msg, "/spawn")) {
+        main.network.Protocols.genericUpdate.sendTPCoordinates(source.conn, @floatFromInt(world.?.spawn));
+        source.sendRawMessage("Teleported to spawn.");
+        return;
+    }
+
+    if (std.mem.eql(u8, msg, "/die")) {
+        main.items.Inventory.Sync.addHealth(-std.math.floatMax(f32), .kill, .server, source.id);
+        return;
+    }
+
     if (msg[0] == '/') { // Command.
         if (world.?.allowCheats) {
             std.log.info("User \"{s}\" executed command \"{s}\"", .{ source.name, msg }); // TODO use color \033[0;32m
@@ -603,7 +659,7 @@ pub fn loginCallback(item: *main.Auth.QueueItem) void {
         return;
     };
     if (item.response.unwrap()) {
-        source.sendMessage("**#00ff00You are now logged in!#ffffff**", .{});
+        source.sendMessage("**#00ff00You are now logged in! Do /help for more information.#ffffff**", .{});
         source.isLoggedIn.store(true, .monotonic);
         std.log.info("User \"{f}\" logged in.", .{std.ascii.hexEscape(source.name, .upper)});
     } else |err| switch (err) {
