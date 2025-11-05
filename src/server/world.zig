@@ -936,6 +936,9 @@ pub const ServerWorld = struct { // MARK: ServerWorld
 		}
 		user.inventory = loadPlayerInventory(main.game.Player.inventorySize, playerData.get([]const u8, "playerInventory", ""), .{.playerInventory = user.id}, path);
 		user.handInventory = loadPlayerInventory(1, playerData.get([]const u8, "hand", ""), .{.hand = user.id}, path);
+
+                user.hasSetHome.store(playerData.get(bool, "hasSetHome", false), .monotonic);
+                user.setHomePos = playerData.get(Vec3d, "setHomePos", @splat(0));
 	}
 
 	fn loadPlayerInventory(size: usize, base64EncodedData: []const u8, source: main.items.Inventory.Source, playerDataFilePath: []const u8) main.items.Inventory.InventoryId {
@@ -999,6 +1002,9 @@ pub const ServerWorld = struct { // MARK: ServerWorld
 				playerZon.put("hand", ZonElement{.stringOwned = savePlayerInventory(main.stackAllocator, inv)});
 			} else @panic("The player hand inventory wasn't found. Cannot save player data.");
 		}
+
+		playerZon.put("setHomePos", user.setHomePos);
+		playerZon.put("hasSetHome", user.hasSetHome.load(.monotonic));
 
 		const playerPath = std.fmt.allocPrint(main.stackAllocator.allocator, "saves/{s}/players", .{self.path}) catch unreachable;
 		defer main.stackAllocator.free(playerPath);

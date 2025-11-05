@@ -1,12 +1,12 @@
 # TODO
-- [ ] durable string map
+- ~[ ] durable string map~ Not needed anymore?
 - [x] Non-blocking auth
 - [ ] simple teleport prevention
 - [ ] prevent teleporting other players
 - [ ] prevent opening nonexistant chests
 - [ ] prevent teleporting the host
 - [ ] prevent opening others' inventories
-- [ ] Homes (depends on durable string map)
+- [x] Homes: `/sethome`, `/home` and `/spawn`. Home Coords stored persistently in the player's .zig.zon file.
 - [ ] Muting users
 - [ ] Block update logs
 
