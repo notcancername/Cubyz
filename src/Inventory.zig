@@ -323,7 +323,7 @@ pub const Sync = struct { // MARK: Sync
 				defer main.stackAllocator.free(users);
 
 				for(users) |user| {
-					if(user == source and op.ignoreSource()) continue;
+					if(user == source and op.ignoreSource() and op != .health and op != .energy) continue;
 					main.network.Protocols.inventory.sendSyncOperation(user.conn, syncData);
 				}
 			}
@@ -1077,9 +1077,27 @@ pub const Command = struct { // MARK: Command
 						info.target.?.player.health = info.target.?.player.maxHealth;
 						info.cause.sendMessage(info.target.?.name);
 
-						self.syncOperations.append(allocator, .{.kill = .{
-							.target = info.target.?,
+						// self.syncOperations.append(allocator, .{.kill = .{
+						//  .target = info.target.?,
+						// }});
+                                                const source = info.target.?;
+
+                                                if (source.hasSetHome.load(.monotonic)) {
+                                                    main.network.Protocols.genericUpdate.sendTPCoordinates(source.conn, source.setHomePos);
+                                                } else {
+                                                    main.network.Protocols.genericUpdate.sendTPCoordinates(source.conn, @floatFromInt(@import("server/server.zig").world.?.spawn));
+                                                }
+
+						self.syncOperations.append(allocator, .{.health = .{
+						  .target = info.target.?,
+                                                  .health = main.game.Player.super.maxHealth
 						}});
+
+						self.syncOperations.append(allocator, .{.energy = .{
+						  .target = info.target.?,
+                                                  .energy = main.game.Player.super.maxEnergy
+						}});
+
 					} else {
 						self.syncOperations.append(allocator, .{.health = .{
 							.target = info.target.?,
